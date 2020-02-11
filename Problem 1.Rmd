@@ -1,0 +1,17 @@
+---
+title: "Data Visulization: Flights on ABIA"
+author: Richard Marks
+date: 2/10/2020
+output: pdf_document
+---
+```{r setup, include=FALSE}
+library(mosaic,)
+library(tidyverse)
+library(ggplot2)
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r}
+load("~/.Rdata")
+Total_Flight_Delays = (ABIA %>% group_by(UniqueCarrier) %>% summarize(Carrier_Delay = mean(CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, na.rm = TRUE)))
+ggplot(data = Total_Flight_Delays) + geom_bar(mapping = aes(x= reorder(UniqueCarrier, Carrier_Delay), y=Carrier_Delay), stat = 'identity') + coord_flip() + labs(x="Airline (Code)", y= "Average Delay Time (Minutes)", title = "Which Airlines Have the Longest Average Delays")
+```
