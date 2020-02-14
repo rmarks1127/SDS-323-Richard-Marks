@@ -1,0 +1,153 @@
+---
+title: "Exercise 1"
+author: "Richard Marks"
+date: "2/14/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(mosaic)
+library(tidyverse)
+library(ggplot2)
+load("~/.Rdata")
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+Question 1:"Data Visulization: Flights on ABIA"
+```{r}
+Total_Flight_Delays = (ABIA %>% group_by(UniqueCarrier,Month) %>% summarize(Carrier_Delay = mean(CarrierDelay + WeatherDelay + NASDelay + SecurityDelay + LateAircraftDelay, na.rm = TRUE)))
+```
+```{r}
+Total_Flight_Delays_Season=Total_Flight_Delays %>% mutate(Season= cut(Month,c(0,3,6,9,12)))
+levels(Total_Flight_Delays_Season$Season)[levels(Total_Flight_Delays_Season$Season)=="(6,9]"]   <- "Summer"
+levels(Total_Flight_Delays_Season$Season)[levels(Total_Flight_Delays_Season$Season)=="(9,12]"]   <- "Fall"
+levels(Total_Flight_Delays_Season$Season)[levels(Total_Flight_Delays_Season$Season)=="(3,6]"]   <- "Spring"
+levels(Total_Flight_Delays_Season$Season)[levels(Total_Flight_Delays_Season$Season)=="(0,3]"] <- "Winter"
+```
+
+```{r}
+Total_Flight_Delays_Seasons=Total_Flight_Delays_Season %>% group_by(Season,UniqueCarrier) %>% summarize(mean(Carrier_Delay, na.rm = TRUE))
+ Flight_Delays_Season= Total_Flight_Delays_Seasons %>% rename(Delays = `mean(Carrier_Delay, na.rm = TRUE)`)
+```
+```{r}
+levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="AA"] <- "American Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="9E"] <- "Endeavor Air"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="B6"] <- "Jetblue Airways"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="CO"] <- "Continental Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="DL"] <- "Delta Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="EV"] <- "ExpressJet Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="F9"] <- "Frontier Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="MQ"] <- "Envoy Air"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="NW"] <- "Northwest Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="OH"] <- "US Airways Express"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="OO"] <- "SkyWest Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="UA"] <- "United Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="US"] <- "Puerto rico International Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="WN"] <- "SouthWest Airlines"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="XE"] <- "JSX Air"
+ levels(Flight_Delays_Season$UniqueCarrier)[levels(Flight_Delays_Season$UniqueCarrier)=="YV"] <- "Mesa Airlines"
+```
+
+
+```{r}
+ggplot(data = Flight_Delays_Season) + geom_bar(mapping = aes(x= reorder(UniqueCarrier,Delays), y= Delays), stat = 'identity') + coord_flip() + labs(x="Airline (Code)", y= "Average Delay Time (Minutes)", title = "Which Airlines Have the Longest Average Delays", subtitle = "For Each Season") + facet_wrap(~ Season, nrow = 2)
+```
+
+
+Question 2: "Regression Practice"
+
+
+
+
+
+
+```{r}
+plot(creatclear ~ age, data = creatinine)
+```
+```{r}
+lml = lm(creatclear ~ age, data = creatinine)
+plotModel(lml)
+coef(lml)
+```
+
+
+
+2. How does creatinine clearance rate change with age?
+Every year someone ages their creatnine clearance rate decreases by .62 mL/(min per year)
+
+
+
+```{r}
+data55 = data.frame(age= c(55))
+predict(lml,data55)
+```
+
+
+
+What creatinine clearance rate should we expect, on average, for a 55-year-old?
+113.72 mL/(min per year)
+
+
+
+
+```{r}
+data40 = data.frame(age= c(40))
+predict(lml,data40)
+data60 = data.frame(age= c(60))
+predict(lml,data60)
+```
+
+
+
+3.Whose creatinine clearance rate is healthier (higher) for their age: a 40-year-old with a rate of 135, or a 60-year-old with a rate of 112? A 40 year old with a rate of 135 (12mL/(min per year above the predicted level) is healthier than a 60 year old with a rate of 112 (1.4mL/(min per year above the predicted level)
+
+
+
+
+Question 3: "Green Buildings"
+
+
+Given the "data guru's" arguement the company would be making significantly more money if it were to go green. However there are several flaws in the way they interperated the data. The first flaw is they looked at the median of the rent prices instead of the mean. While there are a few outliers they do not significantly effect the data. The mean is still the better way to determine the average rent price. The other major flaw is that they did not use any nuance in their approach to this problem. They took two rent medians, buildings that are green and those who are not. In reality the rent could be affected by a whole host of other issues. The one I have chosen to focus on is building class. 
+
+Buildings come in three seperate classes, the best are A class, the okay are B class, and the worst are C class. Since our building is being built on East Cesar Chavez it is safe to assume that it will either be a class A or B building. To get a better understanding of the data I combined the A & B class buildings into one group and got the mean rent for both those that are and are not green buildings. I also compiled the average rents for c class buildings both green and not.
+
+
+
+```{r}
+green_class_rent= (greenbuildings %>% group_by(green_rating, class_a, class_b )) %>% summarise(rent= mean(Rent, na.rm= TRUE))
+class_rent= green_class_rent %>% group_by(green_rating, rent) %>% summarise(sum(class_a + class_b, na.rm = TRUE))
+classy_rent= class_rent %>% rename(ClassAB=`sum(class_a + class_b, na.rm = TRUE)`)
+classy= classy_rent %>% group_by(ClassAB, green_rating) %>% summarise(mean(rent, na.rm= TRUE))
+rent_by_class=classy%>% rename(Rent=`mean(rent, na.rm = TRUE)`)
+```
+```{r}
+labels <- c("0" = "Class C", "1" = "Class A&B")
+```
+
+```{r}
+ggplot(data= rent_by_class) + geom_bar(mapping= aes(x= green_rating, y=Rent), stat='identity') + facet_wrap(~ClassAB, nrow = 2, ncol = 3, labeller=labeller(ClassAB = labels)) + labs(title = "A Comparison of Average Rent Between Building Class and Green Rating", x= "Green Rating", y="Average Rent (per square foot)", caption = "A plot comparing average rent prices between buildings of different classes and green ratings. 
+On the X axis the bar centered at zero is for buildings that are not either LEED or EnergyStar certified.
+The bar centered at one stands for buildings that are LEED or EnergyStar certified. ")
+```
+The data above shows that being green only increases the average rent of class C buildings, in fact average rent for green class A&B buildings (mean=$28.54) is actually less than that of non green class A&B buildings (mean=$29.50) by .96 cents. So by going green the company will be losing 250,000 * $.96= $240.000. Therefore making a green building would not be a good financial move for the company
+
+
+
+
+Question 4: "Milk Prices"
+
+To answer the question of what price a store should sell its milk at we must use a decpetivly simple looking formula. n=(p-c)Q, where n is the price the milk should be sold, p is the price the milk is already sold, c is the cost of the milk for the store, and Q is the quantity of milk sold. However Q is actually a function of P, since the price of the milk effects how much milk is actually sold. So the function is actually n=(p-c)*f(p), where c=1
+```{r}
+plot(sales ~ price, data = milkquestion)
+plot(log(sales)~log(price), data=milkquestion)
+lm_ped= lm(log(sales)~ log(price), data = milkquestion)
+coef(lm_ped)
+```
+Now if we plot the price of the milk and the quantity sold we see that the relationship is nonlinear. However if we take the logarithim of both the price and quantity and plot it on a graph we find a negative linear relationship between the two. Since we have created a linear relationship we can now use linear regression to find the slope and intercept. Since quantity is a function of price it can be expressed as Q= e^alpha*p^beta where alpha= exp(intercept) and beta= slope.
+```{r}
+alpha=exp(coef(lm_ped)[1])
+beta= coef(lm_ped)[2]
+curve((x-1)*alpha*(x^beta))
+curve((x-1)*alpha*(x^beta), from = 2.5, 2.7)
+```
+Now that we know what q is we have everything we need to find the optimal price of milk. if we plug in q the equation is n=(p-1)*alpha*p^beta. If we plot this equation onto a graph we can see that there is a peak maximum between $2.60 and $2.65. Therefore that is the optimal price range for milk. 
