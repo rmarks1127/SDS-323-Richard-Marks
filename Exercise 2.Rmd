@@ -1,0 +1,364 @@
+---
+title: "Exercise 2"
+author: "Richard Marks"
+date: "3/11/2020"
+output: pdf_document
+---
+
+```{r , include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+load("~/.Rdata")
+library(tidyverse)
+library(FNN)
+library(mosaic)
+library(foreach)
+data(SaratogaHouses)
+```
+Question 1: KNN Practice
+
+Our goal for this project is to build two predictive models for the price of a Mercedes S Class car given its mileage. The two different models are based on two of the different types of trim 350 or 65AMG. 
+```{r}
+
+sclass550 = subset(sclass, trim == '350')
+
+N = nrow(sclass550)
+N_train = floor(0.8*N)
+N_test = N - N_train
+
+rmse = function(y, ypred) {
+  sqrt(mean(data.matrix((y-ypred)^2)))
+}
+
+train_550 = sample.int(N_train, replace=FALSE)
+
+D_train = sclass550[train_550,]
+D_test = sclass550[-train_550,]
+D_test = arrange(D_test, mileage)
+
+
+X550_train = select(D_train, mileage)
+y550_train = select(D_train, price)
+X550_test = select(D_test, mileage)
+y550_test = select(D_test, price)
+```
+Lets begin by finding which value of K in our KNN regression will yeild the lowest
+Root Mean Squared Error (RMSE) for the 350 Trim. The K with the lowest RMSE has the least amount of error and can most accurately predict prices based on mileage. Lets start by running a few regressions with different values of K, and getting their subsequent Root Mean Squared Error (RMSE) which will be displayed for every value of K. 
+```{r}
+knn3 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=3)
+ypred_550knn3 = knn3$pred
+rmse(y550_test, ypred_550knn3)
+```
+Starting with K=3
+```{r}
+
+knn5 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=5)
+ypred_550knn5 = knn5$pred
+rmse(y550_test, ypred_550knn5)
+```
+K=5
+```{r}
+
+knn9 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=9)
+ypred_550knn9 = knn9$pred
+rmse(y550_test, ypred_550knn9)
+```
+Jumping to K=9
+```{r}
+
+knn10 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=10)
+ypred_550knn10 = knn10$pred
+rmse(y550_test, ypred_550knn10)
+```
+k = 10
+```{r}
+
+knn11 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=11)
+ypred_550knn11= knn11$pred
+rmse(y550_test, ypred_550knn11)
+```
+k= 11
+```{r}
+knn15 = knn.reg(train = X550_train, test = X550_test, y = y550_train, k=15)
+ypred_550knn15 = knn15$pred
+rmse(y550_test, ypred_550knn15)
+```
+
+and finally K = 15. Calculating all of these individually is inefficent so instead we should create a model featuring every single value of K from 3 to 23 and its appropriate RMSE. 
+
+```{r}
+
+K = seq(3, 23, by=1)
+RMSE = foreach(k = K, .combine='c') %do% {
+  out = do(250)*{
+    knn_try = knn.reg(train=X550_train, test= X550_test, y=y550_train, k=k)
+    ypredict= knn_try$pred
+  }
+  rmse(y550_test, ypredict)
+}
+plot(RMSE, K)
+
+```
+The plot above has K values 3-23, and their average RMSE after having been run 250 times each by Rstudios foreach do function. As you can see above, for the 350 category of  Trim the optimal number of K nearest neighbors for a regression is 15 Now that we know this, we just need to plot the fitted model for K=15 which is shown below.
+
+```{r}
+p_test = ggplot(data = D_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), color='black') + 
+  theme_bw(base_size=18) 
+
+p_test + geom_path(aes(x = mileage, y = ypred_550knn15), color='red')
+
+```
+
+Now that we have a predictive model for the 350 Trim we need to repeat our actions and 
+find the optimal K regression value for the 65 AMG Trim.
+
+```{r}
+sclass65AMG = subset(sclass, trim == '65 AMG')
+R=nrow(sclass65AMG)
+R_train= floor(.8*R)
+R_test= R - R_train
+train_65AMG = sample.int(R_train, replace=FALSE)
+W_train = sclass65AMG[train_65AMG,] 
+W_test = sclass65AMG[-train_65AMG,]
+W_test = arrange(W_test, mileage)
+X65AMG_train = select(W_train, mileage)
+y65AMG_train = select(W_train, price)
+X65AMG_test = select(W_test, mileage)
+y65AMG_test = select(W_test, price)
+```
+
+Since for the 350 trim we showed that calculating individual K values is inefficient 
+we will go ahead and skip that step, instead plugging the 65 AMG trim data into the same
+equation used to create the K vs RMSE graph for the 350 Trim group shown below.
+
+```{r}
+
+K = seq(3, 23, by=1)
+RMSE = foreach(k = K, .combine='c') %do% {
+  out = do(1000)*{
+    knn_try = knn.reg(train=X65AMG_train, test= X65AMG_test, y=y65AMG_train, k=k)
+    ypredict= knn_try$pred
+  }
+  rmse(y65AMG_test, ypredict)
+}
+plot(RMSE, K)
+
+```
+by looking at this graph we can see that the optimal amount of nearest neighbors for the 65 AMG group is 3. The lowest amount calculated. Now that we know the optimal value of K
+we can plot a fitted regression model for price based on mileage with a K=3 nearest neighbors regression, shown below. 
+
+```{r}
+knnAMG3 = knn.reg(train = X65AMG_train, test = X65AMG_test, y = y65AMG_train, k=3)
+ypred_65AMGknn3 = knnAMG3$pred
+p_test = ggplot(data = W_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), color='black') + 
+  theme_bw(base_size=18) + xlim(0,150000)
+
+p_test + geom_path(aes(x = mileage, y = ypred_65AMGknn3), color='red')
+```
+
+The trim that had the highest optimal K value was the 350 trim class. The reason that 
+the 350 trim had a higher optimal K is that there were more 350 trims than there were 65 AMG trims. The idea of a KNN regression is to look at the K nearest neighbors to each point to try to figure out the closest values. When we have more observations we need to look at more neighbors (K's) because there is a higher chance for error. If you use a larger, but not too large, number for larger data sets you decrease the chance of error. This explains why the 350 Trim class has a higher optimal K value than the 65 AMG class.
+
+
+
+
+
+
+
+Question 2: Saratoga House Prices
+
+What properties of a house effect its market value? Is it how many rooms? How many square feet? Whether or not it has a fireplace? To be able to answer this question we first need to look at the data. For this we will be using widely acessible data in houses in Saratoga.
+To try and find predictors of price I fit a series of linear regression models to the data. The first (V1) was an uncomplex model, only looking at a houses lot size, the amount of bedrooms, and the amount of bathrooms. The Second (V2) was slightly more complicated, looking all columns of the data set excluding, the type of sewer system, if it is waterfront property, the landvalue, and wheter the house has new construction. The third (V3) was the same as V2, except it also took into account the interactions between all of the variables, such as the interaction between the amount of bedrooms and bathrooms. The final model (V4) is very much based off of V2, except I used a step function to find the most ideal combination of predictors and the most ideal interactions. To see which model most accurately predicts house prices I took the Root Mean Square Error (RMSE) of all four models, in which a lower score means there is less error in the model.
+
+```{r Mine, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+n = nrow(SaratogaHouses)
+n_train = round(0.8*n)  
+n_test = n - n_train
+
+rmse = function(y, yhat) {
+  sqrt( mean( (y - yhat)^2 ) )
+}
+
+rmse_vals = do(100)*{
+  train_cases = sample.int(n, n_train, replace=FALSE)
+  test_cases = setdiff(1:n, train_cases)
+  saratoga_train = SaratogaHouses[train_cases,]
+  saratoga_test = SaratogaHouses[test_cases,]
+  
+  lm1 = lm(price ~ lotSize + bedrooms + bathrooms, data=saratoga_train)
+  lm2 = lm(price ~ . - sewer - waterfront - landValue - newConstruction, data=saratoga_train)
+  lm3 = lm(price ~ (. - sewer - waterfront - landValue - newConstruction)^2, data=saratoga_train)
+  lm_mine =  lm(formula = price ~ lotSize + age + livingArea + pctCollege +
+bedrooms + fireplaces + bathrooms + rooms + heating + fuel +
+ centralAir + landValue + waterfront + newConstruction + landValue:newConstruction +
+livingArea:centralAir + bathrooms:heating + livingArea:waterfront +
+ bedrooms:waterfront + livingArea:fuel + fireplaces:landValue +
+ livingArea:fireplaces + fireplaces:waterfront + bedrooms:fireplaces +
+ pctCollege:landValue + age:pctCollege + age:centralAir + fuel:centralAir + fuel:landValue + bathrooms:landValue + lotSize:landValue + pctCollege:fireplaces + heating:landValue + age:landValue + age:waterfront + rooms:newConstruction + bathrooms:newConstruction, data = saratoga_train)
+  yhat_test1 = predict(lm1, saratoga_test)
+  yhat_test2 = predict(lm2, saratoga_test)
+  yhat_test3 = predict(lm3, saratoga_test)
+  yhat_test4 = predict(lm_mine, saratoga_test)
+  c(rmse(saratoga_test$price, yhat_test1),
+    rmse(saratoga_test$price, yhat_test2),
+    rmse(saratoga_test$price, yhat_test3),
+    rmse(saratoga_test$price, yhat_test4))
+}
+
+boxplot.default(rmse_vals, outline = FALSE)
+```
+
+The boxplot above shows the average RMSE of each model. As we can see V4 (RMSE=56,949.67) is significantly lower than V1 (RMSE= 78,078.15), V2 (RMSE= 67,404,01), and V3 (RMSE= 77572.35). This shows that of our four models V4 is the most accurate in predicting the price of a house.
+
+Now that we have a pretty good predictive model the question comes to, is there a better possible model? So far I have only created linear regression models, which are not the only type of model available. Another available model is the K Nearest Neighbors regression model. For this model I ran all of the non categorical data excluding the house price in a standardized KNN from K=50 to K=100, going by every 5 neighbors. 
+
+```{r}
+x= dplyr::select(SaratogaHouses,- heating, - fuel, -newConstruction, -sewer, -waterfront, -centralAir, -price)
+y= dplyr::select(SaratogaHouses, price)
+n = nrow(SaratogaHouses)
+n_train = round(0.8*n)  
+n_test = n - n_train
+train_cases = sample.int(n, n_train, replace=FALSE)
+test_cases = setdiff(1:n, train_cases)
+
+Xsaratoga_train = x[train_cases,]
+ysaratoga_train = y[train_cases,]
+Xsaratoga_test = x[test_cases,]
+ysaratoga_test = y[test_cases,]
+scale_factors = apply(Xsaratoga_train, 2 ,sd)
+X_train = scale(Xsaratoga_train, scale=scale_factors)
+X_test = scale(Xsaratoga_test, scale=scale_factors)
+
+K = seq(50, 100 , by=5)
+RMSE = foreach(k = K, .combine='c') %do% {
+  out = do(100)*{
+
+
+n = nrow(SaratogaHouses)
+n_train = round(0.8*n)  
+n_test = n - n_train
+train_cases = sample.int( n_train, replace=FALSE)
+
+Xsaratoga_train = x[train_cases,]
+ysaratoga_train = y[train_cases,]
+Xsaratoga_test = x[-test_cases,]
+ysaratoga_test = y[-test_cases,]
+scale_factors = apply(Xsaratoga_train, 2 ,sd)
+X_train = scale(Xsaratoga_train, scale=scale_factors)
+X_test = scale(Xsaratoga_test, scale=scale_factors)
+knn_try = knn.reg( X_train, X_test,ysaratoga_test, k=k) 
+ypredict= knn_try$pred
+  }
+  rmse(ysaratoga_test, ypredict)
+}
+plot(RMSE, K)
+```
+The plot above shows that the optimal amount of K Nearest Neighbors is about 55, as it does fluctuate depending on how the training and testing split turns out. However as we can see the even the K value with the lowest RMSE has significantly higher amount of error than our V4 model, showing that our V4 linear regression is the optimal model to predict the price of houses. 
+
+From V4 there are three variables that are the largest indicators of a houses price: The Value of the land the house is built on, the amount of living space in the house, and oddly enough the amount of fireplaces that are in the house. These factors had the most amount of interactions with other factors in the model. If you use this model on other sets of houses you can get a good prediction of a houses market value. 
+
+
+Question 3: Predicting When Articles Go Viral
+
+In this age where the internet is an integral part of the lives of the majority of the worlds population, there is an important question for many internet news sites, how does an article go viral? It seems that nearly anything could make an article go viral, the title, the pictures, maybe just dumb luck. But statisitcally we can find a formula that at least can show when an article can go viral more than a 50/50 chance. 
+After creating a linear regression using many different aspects of a post, and the interactions between them (such as the interaction between how many pictures are in the article and how many videos are in it) we need to create two categories for the outcomes. If the post has 1400 shares or more then the post is considered viral, and if it has less then it is not viral. Now that we have this binary we can create a confusion matrix to see how well our model does. 
+  
+```{r, include=FALSE}
+N= nrow(online_news)
+N_train = floor(0.8*N)
+N_test = N - N_train
+rmse_vals = do(100)*{
+  train_cases = sample.int(N, N_train, replace=FALSE)
+  Online_train = online_news[train_cases,]
+  Online_test = online_news[-train_cases,]
+HEHE=  lm(shares ~ is_weekend + n_tokens_title + n_tokens_content + 
+       num_hrefs + num_self_hrefs + average_token_length + num_keywords + 
+       data_channel_is_entertainment + data_channel_is_bus + data_channel_is_socmed + 
+       data_channel_is_world + self_reference_max_shares + self_reference_avg_sharess + 
+       weekday_is_tuesday + weekday_is_friday + global_rate_positive_words + 
+       global_rate_negative_words + min_positive_polarity + avg_negative_polarity + 
+       min_negative_polarity + title_subjectivity + title_sentiment_polarity + 
+       data_channel_is_tech + self_reference_min_shares + num_imgs + 
+       num_videos + abs_title_sentiment_polarity + self_reference_max_shares:self_reference_avg_sharess + 
+       self_reference_avg_sharess:avg_negative_polarity + average_token_length:self_reference_avg_sharess + 
+       data_channel_is_bus:min_negative_polarity + n_tokens_content:data_channel_is_tech + 
+       n_tokens_content:min_positive_polarity + data_channel_is_bus:self_reference_max_shares + 
+       weekday_is_tuesday:min_positive_polarity + average_token_length:self_reference_max_shares + 
+       average_token_length:self_reference_min_shares + n_tokens_title:self_reference_min_shares + 
+       weekday_is_tuesday:self_reference_min_shares + n_tokens_content:self_reference_min_shares + 
+       min_negative_polarity:self_reference_min_shares + title_sentiment_polarity:self_reference_min_shares + 
+       title_subjectivity:self_reference_min_shares + num_keywords:self_reference_max_shares + 
+       num_keywords:self_reference_avg_sharess + num_self_hrefs:average_token_length + 
+       num_hrefs:data_channel_is_socmed + weekday_is_friday:self_reference_min_shares + 
+       n_tokens_title:num_self_hrefs + n_tokens_content:num_imgs + 
+       n_tokens_content:num_keywords + n_tokens_content:average_token_length + 
+       data_channel_is_bus:num_videos + n_tokens_content:num_videos + 
+       num_hrefs:global_rate_negative_words + title_subjectivity:num_videos + 
+       n_tokens_content:title_sentiment_polarity + num_hrefs:data_channel_is_tech + 
+       data_channel_is_tech:num_imgs + data_channel_is_world:self_reference_min_shares + 
+       global_rate_positive_words:self_reference_min_shares + data_channel_is_bus:self_reference_min_shares + 
+       self_reference_min_shares:num_imgs + num_keywords:global_rate_positive_words + 
+       title_subjectivity:title_sentiment_polarity + num_hrefs:min_positive_polarity + 
+       self_reference_avg_sharess:self_reference_min_shares + n_tokens_title:self_reference_avg_sharess + 
+       n_tokens_content:data_channel_is_socmed + data_channel_is_socmed:num_imgs + 
+       n_tokens_content:data_channel_is_entertainment + data_channel_is_entertainment:min_positive_polarity + 
+       data_channel_is_world:min_positive_polarity + self_reference_min_shares:abs_title_sentiment_polarity + 
+       data_channel_is_world:global_rate_positive_words + average_token_length:data_channel_is_world + 
+       num_keywords:avg_negative_polarity + is_weekend:min_negative_polarity + 
+       num_hrefs:num_videos + num_self_hrefs:self_reference_max_shares + 
+       global_rate_negative_words:num_videos + self_reference_max_shares:weekday_is_friday + 
+       num_hrefs:abs_title_sentiment_polarity + title_sentiment_polarity:num_imgs + 
+       global_rate_negative_words:num_imgs + n_tokens_content:avg_negative_polarity + 
+       average_token_length:num_imgs + average_token_length:title_sentiment_polarity + 
+       min_positive_polarity:title_sentiment_polarity + num_hrefs:num_imgs + 
+       data_channel_is_world:num_imgs + num_self_hrefs:data_channel_is_bus + 
+       self_reference_max_shares:data_channel_is_tech + self_reference_avg_sharess:data_channel_is_tech + 
+       weekday_is_tuesday:num_imgs + average_token_length:data_channel_is_bus + 
+       num_self_hrefs:self_reference_avg_sharess + self_reference_min_shares:num_videos + 
+       num_keywords:min_negative_polarity + num_keywords:global_rate_negative_words, 
+     data = Online_train)
+Predicted = predict(HEHE, Online_test)
+  Observed= Online_test$shares
+  RMSE= rmse(Observed, Predicted)
+}
+Predict_Viral = ifelse(Predicted > 1400, 1, 0)
+Actual_Viral= ifelse(Observed > 1400, 1, 0)
+```
+```{r}
+table(Actual_Viral, Predict_Viral)
+```
+Looking at the above confusion matrix we can see that our error rate is 47.5%, 2.5% better than if we had just predicted that no aritcles went viral. Our model is very good at predicting if an article will go viral (true postivie rate= 94.8%), however where our model fails is that it predicts most articles to be viral even if they are not, (false positive rate= 88.9%). 
+
+
+
+
+
+Now that we have run a linear regression , it is important to see if there is maybe a different modeling strategy that may have greater results. For this we will run a classification K nearest neighbors regression. To do this we had to create an entirely new variable, a binary variable Viral, where it can either be viral or not be viral. After running multiple KNN, we found that the optimal number for KNN is 150. Below is the confusion matrix for the KNN regression.
+```{r}
+ViralNews= mutate(online_news, Viral = ifelse(shares > 1400, 1, 0))
+ X= dplyr::select(ViralNews, is_weekend , n_tokens_title , n_tokens_content , 
+                    num_hrefs , num_self_hrefs , average_token_length , num_keywords , 
+                    data_channel_is_entertainment , data_channel_is_bus , data_channel_is_socmed , 
+                    data_channel_is_world , self_reference_max_shares ,self_reference_avg_sharess , 
+                    weekday_is_tuesday , weekday_is_friday , global_rate_positive_words , 
+                    global_rate_negative_words , min_positive_polarity , avg_negative_polarity , 
+                    min_negative_polarity , title_subjectivity , title_sentiment_polarity , 
+                    data_channel_is_tech , self_reference_min_shares , num_imgs , 
+                    num_videos , abs_title_sentiment_polarity)
+Y= dplyr:: select(ViralNews, Viral)
+n_train = round(0.8*n)
+n_test = n - n_train
+train_ind = sample.int(n, n_train)
+X_train = X[train_ind,]
+X_test = X[-train_ind,]
+y_train = Y[train_ind,]
+ObservedViral = Y[-train_ind,]
+scale_factors = apply(X_train, 2, sd)
+X_train_sc = scale(X_train, scale=scale_factors)
+X_test_sc = scale(X_test, scale=scale_factors)
+PredictedViral = class::knn(train=X_train_sc, test= X_test_sc, cl=y_train, k=150)
+table(ObservedViral, PredictedViral)
+```
+ As you can see from our confusion matrix above, our overall error rate was 39.3%, 8.2% lower than our previous model. Our false poitive rate is significantly lower than our previous rate (30.6%) , but with that our true positie rate also lower significantly (52%). This classification model is the superior model, because its overall accuracy is higher. The first model was way too willing to predict an article to go viral, which is not accurate to reality and could lead to articles with lower shares being promoted because they were predicted to go viral. The second classification model was very good at telling that an article will not go viral, showing restraint in classifying viral articles. The classification way was superior because it treated the issue like a classification problem the entire time. While the linear regression model only treated the end of the problem like a classification problem. This issue revolves around a classification binary, viral or not, and by treating the problem how it should be gave a better model. 
