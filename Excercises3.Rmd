@@ -1,0 +1,190 @@
+---
+title: "Excercise 3"
+author: "Richard Marks"
+date: "4/18/2020"
+output:
+  pdf_document
+---
+
+```{r setup, include=FALSE}
+library(mosaic)
+library(ggplot2)
+library(formattable)
+library(LICORS)  
+library(foreach)
+library(tidyverse)
+load("~/.Rdata")
+knitr::opts_chunk$set(echo = FALSE)
+```
+```
+Question 1: Predictive Model Building
+```
+The housing market seems very abarbitrary, there are some things that obviously affect the price of rent for a building, such as the age and the class. But there are many other things that to an outside observer seem like they should not affect the price at all. Using a Linear Regression we are looking to find the optimal model for the cost of rent, seeing how different factors and the interactions between the factors affect rents price. The other major thing this model will be doing is seeing if it is really worth the cost to make the building green, in essence if having a green rating increases the price of rent, and if so how much.
+
+```{r}
+greenbuild= greenbuildings.csv[,-1]
+lm_medium= lm(Rent~., data = greenbuild)
+
+LML= lm(formula = Rent ~ cluster + size + empl_gr + leasing_rate + 
+     stories + age + renovated + class_a + class_b + LEED + green_rating + 
+     net + amenities + cd_total_07 + hd_total07 + Precipitation + 
+     Gas_Costs + Electricity_Costs + cluster_rent + size:cluster_rent + 
+     cluster:size + cluster:cluster_rent + size:Precipitation + 
+     stories:cluster_rent + size:leasing_rate + net:cd_total_07 + 
+     green_rating:amenities + LEED:cluster_rent + age:class_b + 
+     age:class_a + leasing_rate:cluster_rent + age:renovated + 
+     stories:amenities + class_b:Gas_Costs + size:cd_total_07 + 
+     class_b:amenities + cluster:leasing_rate + amenities:cluster_rent + 
+     age:cluster_rent + renovated:cluster_rent + age:Electricity_Costs + 
+     class_b:Precipitation + class_b:Electricity_Costs + class_a:Precipitation + 
+     class_a:Electricity_Costs + class_a:Gas_Costs + empl_gr:class_b + 
+     amenities:Electricity_Costs + hd_total07:cluster_rent + cluster:stories + 
+     net:cluster_rent + stories:cd_total_07 + renovated:hd_total07 + 
+     stories:renovated + size:renovated + stories:age + size:age + 
+     size:class_a + cluster:Electricity_Costs + cluster:hd_total07 + 
+     cd_total_07:hd_total07 + Electricity_Costs:cluster_rent + 
+     age:cd_total_07 + amenities:Gas_Costs + amenities:Precipitation + 
+     renovated:cd_total_07 + cluster:Gas_Costs + cluster:cd_total_07 + 
+     leasing_rate:LEED + size:stories, data = greenbuild)
+```
+For this regression we first took out the Property ID as it is arbitrary and shouldnt be considered. Then we created a base model considering just the main effects of every single factor. After that we ran a stepwise model to find the optimal model for the price of rent(LML= lm(formula = Rent ~ cluster + size + empl_gr + leasing_rate + 
+     stories + age + renovated + class_a + class_b + LEED + green_rating + 
+     net + amenities + cd_total_07 + hd_total07 + Precipitation + 
+     Gas_Costs + Electricity_Costs + cluster_rent + size:cluster_rent + 
+     cluster:size + cluster:cluster_rent + size:Precipitation + 
+     stories:cluster_rent + size:leasing_rate + net:cd_total_07 + 
+     green_rating:amenities + LEED:cluster_rent + age:class_b + 
+     age:class_a + leasing_rate:cluster_rent + age:renovated + 
+     stories:amenities + class_b:Gas_Costs + size:cd_total_07 + 
+     class_b:amenities + cluster:leasing_rate + amenities:cluster_rent + 
+     age:cluster_rent + renovated:cluster_rent + age:Electricity_Costs + 
+     class_b:Precipitation + class_b:Electricity_Costs + class_a:Precipitation + 
+     class_a:Electricity_Costs + class_a:Gas_Costs + empl_gr:class_b + 
+     amenities:Electricity_Costs + hd_total07:cluster_rent + cluster:stories + 
+     net:cluster_rent + stories:cd_total_07 + renovated:hd_total07 + 
+     stories:renovated + size:renovated + stories:age + size:age + 
+     size:class_a + cluster:Electricity_Costs + cluster:hd_total07 + 
+     cd_total_07:hd_total07 + Electricity_Costs:cluster_rent + 
+     age:cd_total_07 + amenities:Gas_Costs + amenities:Precipitation + 
+     renovated:cd_total_07 + cluster:Gas_Costs + cluster:cd_total_07 + 
+     leasing_rate:LEED + size:stories, data = greenbuild)). While this formula looks complex there are a few interesting insights we can make, such the interactions of amenitites with different factors seems to be very important, as it is used multiple times in the model. Now that we have the optimal model it is time to see if being green certified leads to an increase in rent. To do this we just need to look at the main effect of green rating on rent, which is 2.13. This means that for being green certified leads to a 2.13 times rent increase. With this knowledge it seems to be a very good idea to build a green building, as you can charge double the rent than if it was a regular nongreen building
+     
+     
+```
+Question 2: What Causes What
+```
+```
+Part 1: Why can’t I just get data from a few different cities and run the regression of
+“Crime” on “Police” to understand how more cops in the streets affect crime? (“Crime”
+refers to some measure of crime rate and “Police” measures the number of cops in a city.)
+```
+The reason you cannot just run a simple regression on crime on police is because there are so many other factors that go into a cities crime rates then just the amount of officers present. You would be taking this incredibly complicated concept of crime rates that is affected by so many different factors, such as general socioeconomic status of the citizens, if there are gangs, etc. and youre trying to pin it all on one single factor, that is just ludacrous. On another hand you cannot just run a regression, see a correlation between higher cops and lower crime, and say that more cops leads to less crime because correlation does not equal causation, becasuse of the complicated nature mentioned before in this answer.
+
+```
+Part 2: How were the researchers from UPenn able to isolate this effect? Briefly describe
+their approach and discuss their result in the “Table 2” below, from the researchers'
+paper.
+```
+What these researchers did was instead of just using the amount of police around to deter crime, they found another way for the city of Washington D.C. to have an increase in police officers, high terrorism alert days. On these days the police are not there to deter streetlevel crimes they are around to protect the city against possible terrorist threats. So the researchers looked to see if on these days if the crime level was lower and found that yes infact it is shown in the first column of table 2.The researchers then wanted to make sure that there is not less tourists in D.C. on high alert days, since toursit are the main targets of crime, to do this they added the D.C. METRO rider numbers to the equasion, which showed an equal number of tourists no matter the alert shown in column 2 of table 2. They found significance in police lowering the rate of crime.
+
+```
+Part 3: Why did they have to control for Metro ridership? What was that trying to capture?
+```
+They had to control for Metro ridership because it shows how many tourists are in the city, since most travel via metro. If there was a significance decrease in metro ridership it would mean less tourist in the city, which leads to less targets for crime. They were trying to capture the amount of crime done on high threat days in washington D.C. and if they were less than low threat days becasuse of increased police numbers. 
+
+```
+Part 4: Below I am showing you "Table 4" from the researchers' paper. Just focus on the 
+first column of the table. Can you describe the model being estimated here? What is the 
+conclusion?
+```
+The first column of table 4 shows all of the major parts of the model, the most important is the coefficent, which shows that High alert and high police prescence (High Alert x District 1) leads to crime having a zscore  2.621 standard deviations below the average crime rate. The next row (High Alert x Other Districts) shows that the high alert factor is not what lead to the decrease in crime, as it was only .5 standard deviations below the average crime. The thrid row (Log midday ridership) is to show that a higher level of people riding the Metro leads to an increase in crime. The conclusion is that a higher police prescence does in fact lead to a decrease in crime.
+
+```
+Question 3: Clustering & PCA
+```
+Clustering and PCA are two different ways to put in unsupervised data and get different information about classes out. For this task we are trying use the chemical composition of wine to tell if it is a red of a white, to start we will use a K-means clustering.
+
+
+
+
+```{r}
+X = winely[,-(10:13)]
+X = scale(X, center=TRUE, scale=TRUE)
+mu = attr(X,"scaled:center")
+sigma = attr(X,"scaled:scale")
+clust = kmeanspp(X, k=2, nstart=25)
+
+qplot(chlorides, volatile.acidity, data= winely, color= factor(clust$cluster))
+clust$withinss
+sum(clust$withinss)
+clust$betweenss
+```
+As shown in the graph above there are two very noticiable groups, with the red group being red wines and the blue being whites. While these groups are close togheter they are very distinct. However this method is not good at all at telling the quality of the wine.
+Next we will use PCA to try to group the wines, and see if the PCA can tell a good wine from a bad one. 
+
+```{r}
+PCAwine= prcomp(X, scale= TRUE)
+```
+```{r}
+round(PCAwine$rotation[,1:4],2)
+```
+
+```{r}
+ggplot(wineds) + geom_point(aes(x= PC1, y= PC2, color= factor(color)))
+```
+```{r}
+lmlo= lm(quality ~ PC1 + PC2 + PC3 + PC4, data = wineds)
+plot(quality~ fitted(lmlo), data= wineds)
+```
+
+
+As you can see from the plots above, PCA divided the wines color extremely well with very limited crossover. Also PCA is better at telling the difference between a good and bad wine ,normally putting it in at least 1 rank above or below its actual rank. With all of this evidence we can see that PCA is by far the surperior way to find the correct groupings from unsupervised data. 
+
+```
+Question 4: Market Segmentation
+```
+
+In our modern era social media is king, millions of users log on daily, and no social media site is bigger and more popular than Twitter. For NutrientH20 its important to know what kind of people follow you, to get a better look into their intrests. To do this we categorized the tweets of all of NutrientH20's followers into 36 different very specific categories, of which we divided into 8 larger more general categories (News, Sports, Business, Relationships, School, Entertainment, Outdoors, Food.) 
+
+
+```{r}
+Social = (social_marketing.csv) %>% group_by(current_events, travel, photo_sharing, tv_film, sports_fandom , politics, food, family, home_and_garden, music, news, online_gaming, shopping, health_nutrition, college_uni, sports_playing, cooking ,eco, computers ,business, outdoors, crafts, automotive, art, religion, beauty, parenting, dating, school, personal_fitness, fashion ,small_business) %>% summarize(Food = mean(food + health_nutrition + cooking , na.rm = TRUE))
+Socil = (Social) %>% group_by(current_events, travel, photo_sharing, tv_film, sports_fandom , politics, family, home_and_garden, music, news, online_gaming, shopping, college_uni, sports_playing, eco, computers ,business, outdoors, crafts, automotive, art, religion, beauty, parenting, dating, school, personal_fitness, fashion ,small_business, Food) %>% summarize(Sports = mean(personal_fitness + sports_playing + sports_fandom , na.rm = TRUE))
+Socl = (Socil) %>% group_by(current_events, travel, photo_sharing, tv_film, politics, family, home_and_garden, music, news, online_gaming, shopping, college_uni, eco, computers ,business, outdoors, crafts, automotive, art, religion, beauty, parenting, dating, school, fashion ,small_business, Food, Sports) %>% summarize(Entertainment = mean(tv_film +music + online_gaming + shopping + fashion + art + crafts + beauty + computers +photo_sharing , na.rm = TRUE))
+Soc = (Socl) %>% group_by(current_events, travel, photo_sharing, politics, family, home_and_garden, news,  college_uni, eco, computers ,business, outdoors, crafts, automotive, religion, beauty, parenting, dating, school ,small_business, Food, Sports, Entertainment) %>% summarize(News = mean(current_events + politics + news + eco, na.rm = TRUE))
+So = (Soc) %>% group_by(travel, photo_sharing, family, home_and_garden,  college_uni,  computers ,business, outdoors, crafts, automotive, religion, beauty, parenting, dating, school ,small_business, Food, Sports, Entertainment, News) %>% summarize(School = mean( college_uni + school, na.rm= TRUE))
+S = (So) %>% group_by(travel, photo_sharing, family, home_and_garden,  computers ,business, outdoors, crafts, automotive, religion, beauty, parenting, dating ,small_business, Food, Sports, Entertainment, News, School) %>% summarize(Relationships = mean(family + religion + parenting + dating , na.rm = TRUE))
+M = (S) %>% group_by(travel, photo_sharing, home_and_garden,  computers ,business, outdoors, automotive ,small_business, Food, Sports, Entertainment, News, School, Relationships) %>% summarize(Outdoors = sum(travel + home_and_garden + outdoors + automotive, na.rm = TRUE))
+Me = (M) %>% group_by(photo_sharing, computers ,business, automotive ,small_business, Food, Sports, Entertainment, News, School, Relationships, Outdoors) %>% summarize(Business = mean(business + small_business, na.rm = TRUE))
+Media = (Me) %>% group_by ( Food, Sports, Entertainment, News, School, Relationships, Outdoors, Business) 
+SocialMedia= Media[,-(1:5)]
+```
+```{r}
+ N= data.frame(SocialMedia)  %>% summarize(NEWS = mean(News, na.rm = TRUE))
+ E= data.frame(SocialMedia)  %>% summarize(ENTERATAINMENT = mean(Entertainment, na.rm = TRUE))
+O= data.frame(SocialMedia)  %>% summarize(OUTDOORS = mean(Outdoors, na.rm = TRUE))
+ F= data.frame(SocialMedia)  %>% summarize(FOOD = mean(Food, na.rm = TRUE))
+ S= data.frame(SocialMedia)  %>% summarize(SPORTS = mean(Sports, na.rm = TRUE))
+ SCH= data.frame(SocialMedia)  %>% summarize(SCHOOL = mean(School, na.rm = TRUE))
+ R= data.frame(SocialMedia)  %>% summarize(RELATIONSHIPS = mean(Relationships, na.rm = TRUE))
+ B= data.frame(SocialMedia)  %>% summarize(BUSINESS = mean(Business, na.rm = TRUE))
+```
+
+```{r}
+Sumpou <- merge(E,F)
+ssss <- merge(Sumpou, N)
+ss <- merge(ssss, O)
+sss <- merge(R, B)
+sssss <- merge(sss, S)
+ssssss <- merge(sssss, SCH)
+Bet <- merge(E,N)
+Better <- merge(Bet, F)
+```
+
+
+Below are the average amount of tweets per person per category
+
+ENTERTAINMENT (10.64) NEWS (5.034)  FOOD (5.97) SPORTS (3.7)  SCHOOL (2.32)  BUSINESS (.76) OUTDOORS (3.72)  RELATIONSHIPS (3.59)
+   
+
+As you can see the three most tweeted about categories are Entertainment, Food, and News. Food is expected to be one of the highest, given that NutrientH20 is a beverage brand. Entertainment and News being higher is interesting, and gives us some insight into the dedicated consumer base of NutrientH20. These are the average tweets of consumers who follow NutrientH20, which means they are the most dedicated consumers. What this tells us is that our consumers most consistently like Entertainment, News and Food. For marketing it is very hard to make an ad campaign that goes off of current news, so that market is out, but we can work with entertainment, the single largest market we have. If we make adds based off of entertainment, such as famous TV shows, or we could try to partner with a famous youtuber. If we make tweets that are not overtly ads, such as "Lil Wayne must be thirsty after his performance on the Masked Singer!'. Tweets like these can get alot of retweets an likes, speading our brand and reaching new consumers. 
