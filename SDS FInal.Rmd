@@ -1,0 +1,234 @@
+---
+title: "To Be The Very Best"
+author: "Richard Marks"
+date: "4/27/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(mosaic)
+library(tidyverse)
+library(foreach)
+library(ggplot2)
+load("~/.Rdata")
+knitr::opts_chunk$set(echo = FALSE)
+```
+```
+ABSRACT
+```
+Pokemon is an international mulitimedia phenominon spanning over twenty years. In this paper we looked to see what truly makes a pokemon strong. We found that being a legendary, having a balanced set of base stats, having a high egg hatch step rate, and being primarliy male has the best chance of predicting if a pokemon will be stong.
+```
+INTRODUCTION
+```
+On Februrary 27, 1996 a (at the time) small game developing studio named Game Freak partnered with Nintendo to release Pokemon Red and Green for the Nintendo Game Boy in Japan. The release would lead to a worldwide phenominon spanning videogames, trading cards, tv shows, etc. Through the 24 years since its inception Pokemon has skyrocketted to become the highest grossing media franchise of all time, grossing over 95 billion dollars in total revenue. To out this into perspective the second highest grossing franchise is Hello Kitty at 86 billion dollars in total revenue, with a 9 billion dollar gap between the two. Through its popularity Pokemon has grown to a household name, and with an ever expanding list of pokemon, with the first game introducing 151 to the Ultra Sun and Ultra Moon games having 801 unique and obtainable pokemon. With all of these added pokemon there is a question that most players come across, what makes a Pokemon strong? To answer this question we have to ask two more. What is the strongest pokemon type for each of the games 6 stats Hp(hit points), attack (physical attack), defense(physical defense), special attack, special defense, and speed? Also, which type has the highest base stat total?  Alongside trying to figure out what makes a Pokemon strong there are a few other questions this report there will be focusing on. Which generation has the strongest pokemon? Can we create a model capable of predicting a pokemons base stat total based off of various factors? Finally is it possible to create a unsupervised clustering model able to tell if a pokemon is a legendary or not. This data was taken from Serebii.net, the most accurate and expansive pokemon database. 
+
+```
+Methods/Results
+```
+```
+Which Type Has the Highest Average For Each Base Stat?
+```
+To answer this question we will be taking the average of each stat for every type. Pokemon who have two types will be counted for both of their types. So for example Charizard will be counted in the averages for both the fire and flying types. 
+
+```{r}
+SpeedAVG= (pokemon %>% group_by(type1) %>% summarize(Speed=mean(speed, na.rm= TRUE)))
+SpeedAVG2= (pokemon %>% group_by(type2) %>% summarize(Speed= mean(speed, na.rm= TRUE)))
+AVGspeed2= SpeedAVG2[-(1),]
+SEOOD = bind_cols(AVGspeed2, SpeedAVG)
+Speed= SEOOD %>% group_by(type1) %>% summarize(SPEED= sum((Speed + Speed1)/2))
+```
+```{r}
+attackAVG= (pokemon %>% group_by(type1) %>% summarize(Attack=mean(attack, na.rm= TRUE)))
+attackAVG2= (pokemon %>% group_by(type2) %>% summarize(Attack= mean(attack, na.rm= TRUE)))
+AVGattack2= attackAVG2[-(1),]
+AEOOD = bind_cols(AVGattack2, attackAVG)
+Attack= AEOOD %>% group_by(type1) %>% summarize(Attack= sum((Attack + Attack1)/2))
+```
+```{r}
+SPattackAVG= (pokemon %>% group_by(type1) %>% summarize(SPAttack=mean(sp_attack, na.rm= TRUE)))
+SPattackAVG2= (pokemon %>% group_by(type2) %>% summarize(SPAttack= mean(sp_attack, na.rm= TRUE)))
+AVGSPattack2= SPattackAVG2[-(1),]
+SPEOOD = bind_cols(AVGSPattack2, SPattackAVG)
+SPAttack= SPEOOD %>% group_by(type1) %>% summarize(SPAttack= sum((SPAttack + SPAttack1)/2))
+```
+```{r}
+defenseAVG= (pokemon %>% group_by(type1) %>% summarize(Defense=mean(defense, na.rm= TRUE)))
+DefenseAVG2= (pokemon %>% group_by(type2) %>% summarize(Defense= mean(defense, na.rm= TRUE)))
+AVGDefense2= DefenseAVG2[-(1),]
+DEOOD = bind_cols(AVGDefense2, defenseAVG)
+Defense= DEOOD %>% group_by(type1) %>% summarize(Defense= sum((Defense + Defense1)/2))
+```
+```{r}
+SPdefenseAVG= (pokemon %>% group_by(type1) %>% summarize(SPDefense=mean(sp_defense, na.rm= TRUE)))
+SPDefenseAVG2= (pokemon %>% group_by(type2) %>% summarize(SPDefense= mean(sp_defense, na.rm= TRUE)))
+AVGSPDefense2= SPDefenseAVG2[-(1),]
+SPDEOOD = bind_cols(AVGSPDefense2, SPdefenseAVG)
+SPDefense= SPDEOOD %>% group_by(type1) %>% summarize(SPDefense= sum((SPDefense + SPDefense1)/2))
+```
+```{r}
+HPAVG= (pokemon %>% group_by(type1) %>% summarize(HP=mean(hp, na.rm= TRUE)))
+HPAVG2= (pokemon %>% group_by(type2) %>% summarize(HP= mean(hp, na.rm= TRUE)))
+AVGHP2= HPAVG2[-(1),]
+HEOOD = bind_cols(AVGHP2, HPAVG)
+HP= HEOOD %>% group_by(type1) %>% summarize(HP= sum((HP + HP1)/2))
+```
+```{r}
+Stats <- merge(HP,Attack, by="type1")
+stats <- merge(Stats,SPAttack, by="type1")
+STats <- merge(stats,SPDefense, by= "type1")
+STAts <- merge(STats,Defense, by= "type1")
+STATS <- merge(STAts,Speed, by= "type1")
+```
+After averaging the base stats of each pokemon within each type we have found which Pokemon types have the highest average base statisitic for all six of the differnt base statistics. For HP the Dragon type had the highest average hit points with an average of 82.6. For the Attack stat the fighting type had the highest average at 99.4. For Defense the rock type had the highest average at 111.7. For Special Attack the fire type had the highest average with 92.9. For Special Defense the fairy type had the highest average with 84.4. The final stat is for speed with the flying type rocketing in with an average of 90.8. 
+
+```
+Which Type Aside From Dragon Has The Highest Base Stat Total?
+```
+Base Stat totals are the sum of all 6 of a Pokemons stats. While most pokemon have a modest base stat total ranging from 300-400 there are some that excel, and some that fall far below their peers. For this analysis the Dragon type will be excluded, as the majority of Dragon type Pokemon are Legendary (rare Pokemon with extremely high base stat totals usually around or over 600) or PsuedoLegendary (rare Pokemon that, while not considered a legendary, have a base stat total of 600). This would make the Dragon Type have the highest base stat total by a wide margin. So to find which type has the highest average base stat total we will do the same thing as with each individual stat. We will average the base stat totals of all pokemon of each type, with pokemon that have Dual Types being considered as both of their types. 
+```{r}
+StatAVG= (pokemon %>% group_by(type1) %>% summarize(BST=mean(base_total, na.rm= TRUE)))
+StatAVG2= (pokemon %>% group_by(type2) %>% summarize(BST= mean(base_total, na.rm= TRUE)))
+AVGStat2= StatAVG2[-(1),]
+STDEOOD = bind_cols(AVGStat2, StatAVG)
+BST= STDEOOD %>% group_by(type1) %>% summarize(BST= sum((BST+BST1)/2))
+```
+Of all 17 remaining types there was a clear winner with the Steel type having an average base stat total of 480.9 which is over 100 points higher than the type with the lowest base stat total the Bug type with an average of only 377.7 points. The Steel type having the highest average base stat total is interesting because it did not have the single highest average for any of the 6 stats, not even Defense which is what it is known for. So having the whole being greater than the sum of its parts is a very interesting observation when we take into account the question we are trying to answer, what makes a Pokemon strong. The question is answered by the Steel type, being well rounded. If a Pokemon were to excel in only 1 or 2 stats it could be strong in certain situations, but not all of the time. Lets use Alakasam as an example. Alakasam has an insane base special attack stat of 135, and a very fast speed of 120, so it should hit before any other Pokemon and very hard. Unless that Pokemon had a very high special defense stat such as Snorlax at 110, which would very easily survive a hit from an Alakasam and most likely defeat it in one hit, since Alakasam has an abysmal defensive stat. However a Pokemon such as Lucario who is very well rounded is extremely versitile in any situation having both high Attack and Special Attack stats while having very good Defense and Special Defense stats. A good Pokemon is one who is well rounded and viable in many different situations as oppossed to the many Pokemon who have very specific roles to fill. 
+```
+Which Generation Has The Highest Average Base Stat Total
+```
+Older fans of the Pokemon series have recently been complaining about a sudden power creep, where the newer Pokemon introduced are significantly stronger than those of past generations, but is there any validity to this question, or is it just the older fans showing favoritism to the older generations? To answer this question we first must define what a generation is, every few years Pokemon comes out with a new pair of main series games that take place in an all new location. A new generation is created by a new game being created that takes place in a new location, and the Pokemon native to this new location are considered apart of that generation. 
+```{r}
+GENBST= (pokemon %>% group_by(generation) %>% summarize(BST=mean(base_total, na.rm= TRUE)))
+```
+The Average Base Stat Totals for each generation are as follows: Gen 1= 408.3, Gen 2 = 407.2, Gen 3= 404.7, Gen 4= 447.5, Gen 5= 426.4, Gen 6= 436.2 , Gen 7= 448.2. This does confirm the older fans worries, after generation 3 the last game to be avaliable on the Gameboy Advanced, there is a significant power increase. This could very likely be due to the jump from the Gameboy Advanced to the Nintendo DS. To be sure that fans would stick around with the series and but a Nintendo DS to play the newest game GameFreak very well made stronger Pokemon in the hopes of having old players want to catch and use them. Whatever the explaination it is very much true that the most recent games pokemon have expirenced a major power boost compared to those of the very first games. 
+
+```
+Building a Model to Predict a Pokemons Base Stat Total
+```
+Every Pokemon is unique, from its type combination, to the amount of steps it takes to hatch it out of an egg, every pokemon has a unique combination. So a question arises, is it possible to guess a Pokemons base stat total based off of its different properties? To test this we ran a multiple logistic regressions, a small regression using only a pokemons base statistics, a medium regression using any possibly useful information, a large regression using all of that information and all of its interactions, and an optimal regression using the optimal group of statistics, based off of a step function that was too large for our computer to put into the report. Important to note, for the type1 category the flying type was removed from the data set, because there are only three pokemon with the primary flying type (Noibat, Tornadus, and Novivern), with the multiple train set splits created there was no way to ensure that both the train and test sets had a primary flying type. 
+```{r}
+n= nrow(pokemon)
+n_train= round(.8*n)
+n_test= n- n_train
+```
+```{r, warning= FALSE}
+rmse = function(y, ypred) {
+  sqrt(mean(data.matrix((y-ypred)^2)))
+}
+RMSE_VALS=  do(20)*{
+  Bette= pokemon[,(-1)]
+  Bet= Bette[,(-23)]
+ BET= Bet[,(-23)]
+ BETT= BET[,(-27)]
+ BETTE= BETT[,(-27)]
+ Bette = BETTE[,(-28)]
+ Beetr = Bette [-(714:715),]
+ Better= Beetr[-(641),]
+ 
+ train_cases = sample.int(n, n_train, replace=FALSE)
+  test_cases = setdiff(1:n, train_cases)
+  Pokemon_train = Better[train_cases,]
+  Pokemon_train = na.omit(Pokemon_train)
+  Pokemon_test = Better[test_cases,]
+  Pokemon_test= na.omit(Pokemon_test)
+lm_small= lm(base_total ~ speed + attack + sp_attack + hp + sp_defense + defense, data = Pokemon_train)
+lm_med=lm(base_total~ ., data= Pokemon_train)
+lmbest= lm(base_total ~ against_bug + against_dark + against_dragon + against_electric + 
+    against_fairy + against_fire + against_flying + against_ghost + 
+    against_grass + against_ground + against_ice + against_normal + 
+    against_poison + against_psychic + against_rock + against_steel + 
+    against_water + attack + base_egg_steps + base_happiness + 
+    defense + experience_growth + height_m + hp + percentage_male + 
+    sp_attack + sp_defense + speed + type1 + weight_kg + generation + 
+    against_fight+ percentage_male:type1 + experience_growth:type1 + 
+    defense:percentage_male + experience_growth:percentage_male + 
+    base_egg_steps:percentage_male + against_ice:percentage_male + 
+    height_m:percentage_male + against_electric:percentage_male + 
+    base_egg_steps:type1 + percentage_male:speed + percentage_male:generation + 
+    percentage_male:weight_kg + against_poison:percentage_male + 
+    percentage_male:sp_defense + against_ground:type1 + against_ground:percentage_male + 
+    against_normal:base_egg_steps + against_steel:percentage_male + 
+    against_rock:percentage_male + against_ghost:sp_attack + 
+    against_ground:base_egg_steps + against_psychic:type1 + hp:percentage_male + 
+    against_grass:against_rock + experience_growth:generation + 
+    against_fairy:against_psychic + against_flying:height_m + 
+    against_flying:weight_kg + against_fairy:generation + against_steel:against_water + 
+    against_water:percentage_male + experience_growth:speed + 
+    against_flying:against_ground + attack:base_egg_steps + against_ice:base_egg_steps + 
+    against_water:base_egg_steps + against_fire:base_egg_steps + 
+    base_happiness:experience_growth + attack:percentage_male + 
+    sp_defense:type1 + height_m:speed + base_egg_steps:against_fight + 
+    defense:speed + against_ghost:against_rock + against_dark:sp_attack + 
+    speed:generation + against_grass:attack + defense:sp_attack + 
+    against_fire:against_fight + against_grass:against_ground + 
+    against_fire:sp_defense + attack:sp_attack + against_poison:base_happiness + 
+    against_dragon:speed + against_rock:attack + height_m:against_fight + 
+    against_water:generation + percentage_male:sp_attack + against_grass:sp_attack + 
+    base_happiness:hp + against_flying:speed + against_electric:against_steel + 
+    against_poison:against_steel + attack:height_m + height_m:sp_attack + 
+    defense:type1 + base_happiness:speed + against_psychic:generation + 
+    against_fire:speed + sp_defense:weight_kg + against_ground:hp + 
+    base_egg_steps:defense + against_ghost:weight_kg + against_dragon:against_normal + 
+    against_grass:defense + against_electric:sp_attack + against_flying:against_rock + 
+    hp:speed + against_steel:attack + against_ghost:percentage_male + 
+    against_ghost:against_water + against_dark:defense + attack:base_happiness + 
+    against_rock:base_egg_steps + base_happiness:percentage_male + 
+    against_fairy:against_fight + base_egg_steps:sp_defense + 
+    sp_attack:weight_kg + against_bug:speed + against_bug:against_dark + 
+    against_water:against_fight + percentage_male:against_fight + 
+    against_electric:against_ground + base_egg_steps:base_happiness + 
+    attack:defense + against_steel:sp_defense + against_ground:against_water + 
+    against_ice:against_steel + against_ground:sp_attack + against_psychic:height_m + 
+    against_steel:base_happiness + hp:generation + sp_attack:sp_defense + 
+    against_poison:against_rock + against_bug:against_rock + 
+    against_bug:hp + attack:generation + against_psychic:experience_growth + 
+    against_bug:attack + against_dark:against_ice + against_water:speed + 
+    against_steel:speed + experience_growth:hp + experience_growth:sp_attack + 
+    against_ground:sp_defense + against_steel:sp_attack + against_poison:hp + 
+    against_rock:sp_attack + against_electric:against_flying + 
+    against_ground:against_ice + base_happiness:against_fight + 
+    against_dark:experience_growth + against_fire:percentage_male + 
+    height_m:type1 + sp_attack:speed + against_normal:attack + 
+    against_fairy:against_ground + against_rock:defense + against_ice:hp + 
+    against_fairy:weight_kg + against_grass:hp + sp_attack:type1 + 
+    against_flying:sp_defense + against_dark:sp_defense + against_ice:weight_kg + 
+    sp_defense:against_fight  + hp:type1 , data = Pokemon_train)
+lm_large= lm_med=lm(base_total~ (.)^2, data= Pokemon_train)
+yhattest1 = predict(lm_small, Pokemon_test)
+yhattest2 = predict(lm_med, Pokemon_test)
+yhattest3 = predict(lmbest, Pokemon_test)
+yhattest4 = predict(lm_large, Pokemon_test)
+ c(rmse(Pokemon_test$base_total, yhattest1),
+   rmse(Pokemon_test$base_total, yhattest3))
+}
+boxplot.default(RMSE_VALS, outline = FALSE)
+```
+Shown by our above boxplot is the average root mean squared values for the two best performing models. V1 is our smallest model which predicted base stat totals from the pokemons 6 base stats. V2 is our Optimized model which was creaated using many different factors and interactions. Our smallest model is the most accurate, with an average RMSE of .3, so insanely close to the actual responses, however this makes alot of sense, since the base stat total is just a summation of the 6 core statistics, so of course we could predict the base stat total accurately with those. However what is interesting is for our optimal model we had an average RMSE of about 10. This is still a very good prediction of pokemons base stat total, predicting an average of only 10 points away from the actual total. An interesting question within this regression is, what factors had the biggest effect on predicting base stat total, aside from a pokemons core stats. To answer this question we looked at which factors showed up the most in the model, which lead to the three biggest factors being,how many steps it takes to hatch an egg , what percentage of the pokemon are male, and what is the primary typing. Pokemon are able to breed with each other in these games to create stronger pokemon, and these pokemon are hatched out of eggs. The stronger the pokemon is the longer it generally takes to hatch out of an egg, so it makes sense that the egg steps is a good predictor of base stat total. Interestingly a pokemons primary type has a large effect on predicting its base stat total, earlier we looked into the average base stat total for each type, but that was for both primary and secondary typings. Having a pokemons primary type being a strong predictor of base stat total shows how important a primary type is than a secondary. The last strong predictor of base stat total is percentage male, which is very interesting. Most pokemon have an even 50/50 split of female to male, however there are certain pokemon such as Gallade who can only be male, and Miltank who can only be female. This being a strong predictor of base stat total shows a dispairty between the strengths of single gendered pokemon. 
+
+```
+Can We Cluster Legendary Pokemon with Unsupervised Data?
+```
+Legendary Pokemon are extremely rare Pokemon that are very strong, while legendaries are rare is there anything else that really connects them toghether. To answer this question we will be running a Principle Component Analysis to try to accurately group pokemon into either a regular pokemon group or legendary group. You may very well be asking why does this matter though? It matters because for years legendary pokemon have always had an air of wonder around them. Sure they are stronger than average pokemon, but is that truly the only real difference? To create these clusters we will be using two main grouping features, a pokemons base stats and the types that are super effective against it. In pokemon every pokemon has one or two typings , each of these types is weak to and super effective against. This combination is part of what allows pokemon to be so unique. Type combinations are intergral to the core gameplay of Pokemon, so being able to group legendary Pokemon (the strongest in the game) by which types they are weak to can show which typings are the weakest in competitive Pokemon, and which would be the strongest. 
+
+```{r}
+Best= Bette[,(-31)]
+BAM = Best[,(-33)]
+Bes = BAM[,(-31)]
+BESSIE = Bes[,(-27)]
+YUp= BESSIE[,-(19:21)]
+YUM=YUp[,-(21:22)]
+YUH= YUM[,-(25)]
+X = scale(YUH, center=TRUE, scale=TRUE)
+PCAPOKE= prcomp(X, scale= TRUE)
+legend = merge(YUH, PCAPOKE$x[,1:4], by="row.names")
+legend = rename(legend, Pokemon = Row.names)
+lm1 = lm(is_legendary ~ PC1 + PC2 + PC3 + PC4, data=legend)
+ggplot(legend) + geom_point(aes(x= PC1, y= PC2, color= factor(is_legendary)))
+```
+
+Seen above is the results of our Principle Component Analysis, as you can see there are two significantly different groups, the large red group is made up of the normal pokemon and the smaller blue group in the top right corner is comprised of the Legendary Pokemon. This shows that legendary pokemon do have similar characteristics and their Legendary status is not just arbitrary. They all have high base stat totals and most of them are weak and resistant to the same typings, with having a weakness to Ghost being the strongest predictor of being a legendary, and being resistant to Psychic being the strongest predictor of being a legendary. 
+
+```
+Conclusion
+```
+Throughout this analysis there has been one thing made abundantly clear, Pokemon are all unique and overall relatively balanced. This is shown by the fact that for each of the six main stats the type with the highest average stat is never repeated (HP: Dragon, Attack: Fighting, Defense: Rock, Special Attack: Fire, Special Defense: Fairy, speed: Flying), and on top of that the type with the highest average stat total, Steel, does not have the highest single stat, showing that each type is meant to be balanced or better at one specific stat. This shows that the best pokemon are those that are well rounded and balanced, where the highest base stat totals are with the typing that is not the best in anything specific just overall. Also shown through base stat totals was that there has been a significant power creep as the Pokemon generations go up. With the newer pokemon having a significantly higher average base stat total than those of the first few generations. Also important to note is the model created to predict a pokemons base stat total, with the most important predictors being a pokemons primary typing, how many steps it takes to hatch an egg, and the proability of a pokemon to be male. Finally we showed that a pokemon being classified as a legendary is not just an arbitrary concept, it is possible to classify legendary pokemon based off od their base stats and their weaknesses to every type, with legendary pokemon being more likely to be weak to ghost types. This all goes to show that Pokemon is an extremely complex game, where the stongest pokemon are most likely to be legendary. But to find the strongest non-legendary pokemon it is clear that it needs to be a pokemon with well rounded stats, a high amount of steps to hatch its egg, and have a higher chance to be a male pokemon rather than female.  
